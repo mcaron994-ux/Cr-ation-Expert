@@ -26,7 +26,7 @@ export default {
                 )
                 .addRoleOption(option =>
                     option
-                        .setName("verified_role")
+                        .setName("✅ Verifier")
                         .setDescription("Role to give to verified users")
                         .setRequired(true)
                 )
