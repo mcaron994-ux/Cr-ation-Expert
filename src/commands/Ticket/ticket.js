@@ -62,14 +62,37 @@ export default {
                         )
                         .addChannelTypes(ChannelType.GuildCategory)
                         .setRequired(false),
-                )
-                .addRoleOption((option) =>
-                    option
-                        .setName("staff_role")
-                        .setDescription(
-                            "The role that can access tickets (optional).",
-                        )
-                        .setRequired(true),
+               .addRoleOption((option) =>
+    option
+        .setName("staff_role_1")
+        .setDescription("Le premier role du staff (Obligatoire).")
+        .setRequired(true),
+)
+.addRoleOption((option) =>
+    option
+        .setName("staff_role_2")
+        .setDescription("Le deuxieme role du staff (Optionnel).")
+        .setRequired(false),
+)
+.addRoleOption((option) =>
+    option
+        .setName("staff_role_3")
+        .setDescription("Le troisieme role du staff (Optionnel).")
+        .setRequired(false),
+)
+.addRoleOption((option) =>
+    option
+        .setName("staff_role_4")
+        .setDescription("Le quatrieme role du staff (Optionnel).")
+        .setRequired(false),
+)
+.addRoleOption((option) =>
+    option
+        .setName("staff_role_5")
+        .setDescription("Le cinquieme role du staff (Optionnel).")
+        .setRequired(false),
+)
+
                 )
                 .addIntegerOption((option) =>
                     option
