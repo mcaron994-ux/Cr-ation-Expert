@@ -116,10 +116,14 @@ export default {
         ),
     category: "ticket",
 
-    async execute(interaction, config, client) {
-        const deferred = await InteractionHelper.safeDefer(interaction, { flags: MessageFlags.Ephemeral });
-        if (!deferred) {
-            return;
+   const staffRoles = [
+    interaction.options.getRole("staff_role_1"),
+    interaction.options.getRole("staff_role_2"),
+    interaction.options.getRole("staff_role_3"),
+    interaction.options.getRole("staff_role_4"),
+    interaction.options.getRole("staff_role_5")
+].filter(role => role !== null);
+
         }
 
         if (
@@ -271,12 +275,13 @@ description: panelMessage,
                                 : "None specified.",
                             inline: true,
                         },
-                        {
-                            name: "Staff Role",
-                            value: staffRole
-                                ? staffRole.toString()
-                                : "None specified.",
-                            inline: true,
+                               {
+            name: "Staff Roles",
+            value: staffRoles.map(role => role.toString()).join(", ") || "None specified.",
+            inline: true,
+        },
+
+
                         },
                         {
                             name: "Max Tickets Per User",
