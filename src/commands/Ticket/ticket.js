@@ -69,7 +69,7 @@ export default {
                         .setDescription(
                             "The role that can access tickets (optional).",
                         )
-                        .setRequired(false),
+                        .setRequired(true),
                 )
                 .addIntegerOption((option) =>
                     option
