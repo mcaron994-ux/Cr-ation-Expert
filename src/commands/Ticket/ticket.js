@@ -30,32 +30,14 @@ export default {
                         .setDescription('The main message/description for the ticket panel.')
                         .setRequired(true),
                 )
-                .addStringOption((option) =>
-                    option
-                        .setName('button_label')
-                        .setDescription('The label for the ticket creation button (default: Create Ticket)')
-                        .setRequired(false),
-                )
-                .addChannelOption((option) =>
-                    option
-                        .setName('category')
-                        .setDescription('The category where new tickets will be created (optional).')
-                        .addChannelTypes(ChannelType.GuildCategory)
-                        .setRequired(false),
-                )
-                .addChannelOption((option) =>
-                    option
-                        .setName('closed_category')
-                        .setDescription('The category where closed tickets will be moved (optional).')
-                        .addChannelTypes(ChannelType.GuildCategory)
-                        .setRequired(false),
-                )
+                // Move required staff role before optional options to satisfy Discord's API requirement
                 .addRoleOption((option) =>
                     option
                         .setName('staff_role_1')
                         .setDescription('Le premier role du staff (Obligatoire).')
                         .setRequired(true),
                 )
+                // Optional staff roles
                 .addRoleOption((option) =>
                     option
                         .setName('staff_role_2')
@@ -78,6 +60,27 @@ export default {
                     option
                         .setName('staff_role_5')
                         .setDescription('Le cinquieme role du staff (Optionnel).')
+                        .setRequired(false),
+                )
+                // Other optional configuration options
+                .addStringOption((option) =>
+                    option
+                        .setName('button_label')
+                        .setDescription('The label for the ticket creation button (default: Create Ticket)')
+                        .setRequired(false),
+                )
+                .addChannelOption((option) =>
+                    option
+                        .setName('category')
+                        .setDescription('The category where new tickets will be created (optional).')
+                        .addChannelTypes(ChannelType.GuildCategory)
+                        .setRequired(false),
+                )
+                .addChannelOption((option) =>
+                    option
+                        .setName('closed_category')
+                        .setDescription('The category where closed tickets will be moved (optional).')
+                        .addChannelTypes(ChannelType.GuildCategory)
                         .setRequired(false),
                 )
                 .addIntegerOption((option) =>
