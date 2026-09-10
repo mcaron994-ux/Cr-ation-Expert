@@ -124,45 +124,10 @@ export default {
             }
 
             if (subcommand === 'setup') {
-    const existingConfig = (await getGuildConfig(client, interaction.guildId)) || {};
-    
-    // Au lieu de stocker un seul système, on va stocker un tableau de systèmes
-    const ticketSystems = existingConfig.ticketSystems || [];
-    
-    // On continue sans bloquer si un système existe déjà
-    // (supprimer la vérification existingConfig?.ticketPanelChannelId)
-    
-    const panelChannel = interaction.options.getChannel('panel_channel');
-    // ... reste du code ...
-    
-    // Créer un ID unique pour ce système de tickets
-    const systemId = `ticket_${Date.now()}`;
-    
-    // Créer un objet pour ce système
-    const ticketSystem = {
-        id: systemId,
-        ticketCategoryId: categoryChannel ? categoryChannel.id : null,
-        ticketClosedCategoryId: closedCategoryChannel ? closedCategoryChannel.id : null,
-        ticketStaffRoleIds: staffRoles.map((r) => r.id),
-        ticketPanelChannelId: panelChannel.id,
-        ticketPanelMessageId: sentPanel?.id || null,
-        ticketPanelMessage: panelMessage,
-        ticketButtonLabel: buttonLabel,
-        maxTicketsPerUser: maxTicketsPerUser,
-        dmOnClose: dmOnClose,
-        createdAt: new Date().toISOString(),
-    };
-    
-    // Ajouter le système au tableau
-    ticketSystems.push(ticketSystem);
-    
-    // Sauvegarder
-    const currentConfig = existingConfig || {};
-    currentConfig.ticketSystems = ticketSystems;
-    
-    await setGuildConfig(client, interaction.guildId, currentConfig);
-                }
-
+                // Get existing configuration
+                const existingConfig = (await getGuildConfig(client, interaction.guildId)) || {};
+                
+                // Get all options from interaction
                 const panelChannel = interaction.options.getChannel('panel_channel');
                 const categoryChannel = interaction.options.getChannel('category');
                 const closedCategoryChannel = interaction.options.getChannel('closed_category');
@@ -181,38 +146,71 @@ export default {
                 const maxTicketsPerUser = interaction.options.getInteger('max_tickets_per_user') || 3;
                 const dmOnClose = interaction.options.getBoolean('dm_on_close') !== false;
 
+                // Create the embed for the ticket panel
                 const setupEmbed = createEmbed({
                     title: 'Support Tickets',
                     description: panelMessage,
                     color: getColor('info'),
                 });
 
+                // Create button with unique custom ID for this system
+                const systemId = `ticket_${Date.now()}`;
                 const ticketButton = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder().setCustomId('create_ticket').setLabel(buttonLabel).setStyle(ButtonStyle.Primary).setEmoji('📩'),
+                    new ButtonBuilder()
+                        .setCustomId(`create_ticket_${systemId}`)
+                        .setLabel(buttonLabel)
+                        .setStyle(ButtonStyle.Primary)
+                        .setEmoji('📩'),
                 );
 
+                // Send the panel to the specified channel
                 const sentPanel = await panelChannel.send({ embeds: [setupEmbed], components: [ticketButton] });
 
+                // Save configuration to database
                 if (client.db && interaction.guildId) {
-                    const currentConfig = existingConfig || {};
-                    currentConfig.ticketCategoryId = categoryChannel ? categoryChannel.id : null;
-                    currentConfig.ticketClosedCategoryId = closedCategoryChannel ? closedCategoryChannel.id : null;
-                    // store array of staff role ids
-                    currentConfig.ticketStaffRoleIds = staffRoles.map((r) => r.id);
-                    currentConfig.ticketPanelChannelId = panelChannel.id;
-                    currentConfig.ticketPanelMessageId = sentPanel?.id || null;
-                    currentConfig.ticketPanelMessage = panelMessage;
-                    currentConfig.ticketButtonLabel = buttonLabel;
-                    currentConfig.maxTicketsPerUser = maxTicketsPerUser;
-                    currentConfig.dmOnClose = dmOnClose;
+                    // Get or initialize ticket systems array
+                    const ticketSystems = existingConfig.ticketSystems || [];
+                    
+                    // Create new ticket system object
+                    const newTicketSystem = {
+                        id: systemId,
+                        ticketCategoryId: categoryChannel ? categoryChannel.id : null,
+                        ticketClosedCategoryId: closedCategoryChannel ? closedCategoryChannel.id : null,
+                        ticketStaffRoleIds: staffRoles.map((r) => r.id),
+                        ticketPanelChannelId: panelChannel.id,
+                        ticketPanelMessageId: sentPanel?.id || null,
+                        ticketPanelMessage: panelMessage,
+                        ticketButtonLabel: buttonLabel,
+                        maxTicketsPerUser: maxTicketsPerUser,
+                        dmOnClose: dmOnClose,
+                        createdAt: new Date().toISOString(),
+                    };
+                    
+                    // Add to systems array
+                    ticketSystems.push(newTicketSystem);
+                    
+                    // Update configuration
+                    existingConfig.ticketSystems = ticketSystems;
+                    
+                    // Also keep backward compatibility with single system fields
+                    existingConfig.ticketCategoryId = categoryChannel ? categoryChannel.id : null;
+                    existingConfig.ticketClosedCategoryId = closedCategoryChannel ? closedCategoryChannel.id : null;
+                    existingConfig.ticketStaffRoleIds = staffRoles.map((r) => r.id);
+                    existingConfig.ticketPanelChannelId = panelChannel.id;
+                    existingConfig.ticketPanelMessageId = sentPanel?.id || null;
+                    existingConfig.ticketPanelMessage = panelMessage;
+                    existingConfig.ticketButtonLabel = buttonLabel;
+                    existingConfig.maxTicketsPerUser = maxTicketsPerUser;
+                    existingConfig.dmOnClose = dmOnClose;
 
-                    await setGuildConfig(client, interaction.guildId, currentConfig);
+                    await setGuildConfig(client, interaction.guildId, existingConfig);
 
                     logger.info('Ticket configuration saved', {
                         guildId: interaction.guildId,
+                        systemId: systemId,
                         categoryId: categoryChannel?.id,
                         closedCategoryId: closedCategoryChannel?.id,
-                        staffRoleIds: currentConfig.ticketStaffRoleIds,
+                        staffRoleIds: staffRoles.map((r) => r.id),
                         maxTickets: maxTicketsPerUser,
                         dmOnClose: dmOnClose,
                     });
@@ -222,6 +220,7 @@ export default {
                     });
                 }
 
+                // Create success message
                 let successMessage = `The ticket creation panel has been sent to ${panelChannel}.\n`;
 
                 if (categoryChannel) {
@@ -250,6 +249,7 @@ export default {
                     userId: interaction.user.id,
                     userTag: interaction.user.tag,
                     guildId: interaction.guildId,
+                    systemId: systemId,
                     panelChannelId: panelChannel.id,
                     categoryId: categoryChannel?.id,
                     closedCategoryId: closedCategoryChannel?.id,
@@ -259,11 +259,17 @@ export default {
                     commandName: 'ticket_setup',
                 });
 
+                // Create log embed
                 const logEmbed = createEmbed({
                     title: 'Ticket System Setup (Configuration Log)',
                     description: `The ticket panel was set up in ${panelChannel} by ${interaction.user}.`,
                     color: getColor('warning'),
                 }).addFields(
+                    {
+                        name: 'System ID',
+                        value: systemId,
+                        inline: true,
+                    },
                     {
                         name: 'Panel Channel',
                         value: panelChannel.toString(),
