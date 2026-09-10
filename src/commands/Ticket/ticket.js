@@ -1,6 +1,5 @@
-
 import { getColor } from '../../config/bot.js';
-import { SlashCommandBuilder, PermissionFlagsBits, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { SlashCommandBuilder, PermissionFlagsBits, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder, ComponentType, MessageFlags } from 'discord.js';
 import { createEmbed, successEmbed } from '../../utils/embeds.js';
 import { getGuildConfig, setGuildConfig } from '../../services/config/guildConfig.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
@@ -30,14 +29,12 @@ export default {
                         .setDescription('The main message/description for the ticket panel.')
                         .setRequired(true),
                 )
-                // Move required staff role before optional options to satisfy Discord's API requirement
                 .addRoleOption((option) =>
                     option
                         .setName('staff_role_1')
                         .setDescription('Le premier role du staff (Obligatoire).')
                         .setRequired(true),
                 )
-                // Optional staff roles
                 .addRoleOption((option) =>
                     option
                         .setName('staff_role_2')
@@ -62,7 +59,6 @@ export default {
                         .setDescription('Le cinquieme role du staff (Optionnel).')
                         .setRequired(false),
                 )
-                // Other optional configuration options
                 .addStringOption((option) =>
                     option
                         .setName('button_label')
@@ -121,7 +117,84 @@ export default {
             const subcommand = interaction.options.getSubcommand();
 
             if (subcommand === 'dashboard') {
-                return ticketConfig.execute(interaction, config, client);
+                const guildId = interaction.guildId;
+                const guildConfig = await getGuildConfig(client, guildId);
+                const ticketSystems = guildConfig.ticketSystems || [];
+
+                if (ticketSystems.length === 0) {
+                    return await replyUserError(interaction, {
+                        type: ErrorTypes.UNKNOWN,
+                        message: 'No ticket systems configured yet. Use `/ticket setup` to create one.',
+                    });
+                }
+
+                // S'il y a plusieurs systèmes, afficher le sélecteur
+                if (ticketSystems.length > 1) {
+                    const selector = new StringSelectMenuBuilder()
+                        .setCustomId('ticket_system_select')
+                        .setPlaceholder('Choose a ticket system to manage...');
+
+                    ticketSystems.forEach((system) => {
+                        selector.addOptions(
+                            new StringSelectMenuOptionBuilder()
+                                .setLabel(system.ticketButtonLabel || 'Ticket System')
+                                .setDescription(`System ID: ${system.id.substring(0, 15)}...`)
+                                .setValue(system.id)
+                                .setEmoji('🎫')
+                        );
+                    });
+
+                    const row = new ActionRowBuilder().addComponents(selector);
+
+                    await InteractionHelper.safeEditReply(interaction, {
+                        embeds: [
+                            new EmbedBuilder()
+                                .setTitle('🎫 Ticket Systems')
+                                .setDescription('You have multiple ticket systems. Select one to manage:')
+                                .setColor(getColor('info'))
+                                .setFooter({ text: 'Menu expires in 5 minutes' })
+                                .setTimestamp()
+                        ],
+                        components: [row],
+                    });
+
+                    // Attendre la sélection
+                    try {
+                        const collected = await interaction.channel?.awaitMessageComponent({
+                            componentType: ComponentType.StringSelect,
+                            filter: i => i.user.id === interaction.user.id && i.customId === 'ticket_system_select',
+                            time: 300_000, // 5 minutes
+                        });
+
+                        if (!collected) return;
+
+                        await collected.deferUpdate();
+                        const selectedSystemId = collected.values[0];
+                        const selectedSystem = ticketSystems.find(s => s.id === selectedSystemId);
+
+                        if (!selectedSystem) {
+                            return await replyUserError(interaction, {
+                                type: ErrorTypes.UNKNOWN,
+                                message: 'The selected ticket system could not be found.',
+                            });
+                        }
+
+                        // Charger le dashboard pour ce système
+                        return await ticketConfig.execute(interaction, guildConfig, client, selectedSystem);
+                    } catch (error) {
+                        if (error.code !== 'InteractionCollectorError') {
+                            throw error;
+                        }
+                        return await InteractionHelper.safeEditReply(interaction, {
+                            content: '⏱️ Menu expired.',
+                            embeds: [],
+                            components: [],
+                        }).catch(() => {});
+                    }
+                } else {
+                    // Un seul système, charger directement
+                    return await ticketConfig.execute(interaction, guildConfig, client, ticketSystems[0]);
+                }
             }
 
             if (subcommand === 'setup') {
@@ -245,55 +318,6 @@ export default {
                     commandName: 'ticket_setup',
                 });
 
-                const logEmbed = createEmbed({
-                    title: 'Ticket System Setup (Configuration Log)',
-                    description: `The ticket panel was set up in ${panelChannel} by ${interaction.user}.`,
-                    color: getColor('warning'),
-                }).addFields(
-                    {
-                        name: 'System ID',
-                        value: `\`${systemId}\``,
-                        inline: true,
-                    },
-                    {
-                        name: 'Panel Channel',
-                        value: panelChannel.toString(),
-                        inline: true,
-                    },
-                    {
-                        name: 'Ticket Category',
-                        value: categoryChannel ? categoryChannel.toString() : 'None specified.',
-                        inline: true,
-                    },
-                    {
-                        name: 'Closed Category',
-                        value: closedCategoryChannel ? closedCategoryChannel.toString() : 'None specified.',
-                        inline: true,
-                    },
-                    {
-                        name: 'Staff Roles',
-                        value: staffRoles.length > 0 ? staffRoles.map((r) => r.toString()).join(', ') : 'None specified.',
-                        inline: true,
-                    },
-                    {
-                        name: 'Max Tickets Per User',
-                        value: maxTicketsPerUser.toString(),
-                        inline: true,
-                    },
-                    {
-                        name: 'DM on Close',
-                        value: dmOnClose ? 'Enabled' : 'Disabled',
-                        inline: true,
-                    },
-                    {
-                        name: 'Moderator',
-                        value: `${interaction.user.tag} (${interaction.user.id})`,
-                        inline: false,
-                    },
-                );
-
-                // Optionally you could send this logEmbed to a configured moderation log channel.
-
                 return;
             }
         } catch (error) {
@@ -323,3 +347,4 @@ export default {
         }
     },
 };
+
