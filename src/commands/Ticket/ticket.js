@@ -124,12 +124,43 @@ export default {
             }
 
             if (subcommand === 'setup') {
-                const existingConfig = (await getGuildConfig(client, interaction.guildId)) || {};
-                if (existingConfig?.ticketPanelChannelId) {
-                    return await replyUserError(interaction, {
-                        type: ErrorTypes.UNKNOWN,
-                        message: `This server already has a ticket system set up (panel in <#${existingConfig.ticketPanelChannelId}>).`,
-                    });
+    const existingConfig = (await getGuildConfig(client, interaction.guildId)) || {};
+    
+    // Au lieu de stocker un seul système, on va stocker un tableau de systèmes
+    const ticketSystems = existingConfig.ticketSystems || [];
+    
+    // On continue sans bloquer si un système existe déjà
+    // (supprimer la vérification existingConfig?.ticketPanelChannelId)
+    
+    const panelChannel = interaction.options.getChannel('panel_channel');
+    // ... reste du code ...
+    
+    // Créer un ID unique pour ce système de tickets
+    const systemId = `ticket_${Date.now()}`;
+    
+    // Créer un objet pour ce système
+    const ticketSystem = {
+        id: systemId,
+        ticketCategoryId: categoryChannel ? categoryChannel.id : null,
+        ticketClosedCategoryId: closedCategoryChannel ? closedCategoryChannel.id : null,
+        ticketStaffRoleIds: staffRoles.map((r) => r.id),
+        ticketPanelChannelId: panelChannel.id,
+        ticketPanelMessageId: sentPanel?.id || null,
+        ticketPanelMessage: panelMessage,
+        ticketButtonLabel: buttonLabel,
+        maxTicketsPerUser: maxTicketsPerUser,
+        dmOnClose: dmOnClose,
+        createdAt: new Date().toISOString(),
+    };
+    
+    // Ajouter le système au tableau
+    ticketSystems.push(ticketSystem);
+    
+    // Sauvegarder
+    const currentConfig = existingConfig || {};
+    currentConfig.ticketSystems = ticketSystems;
+    
+    await setGuildConfig(client, interaction.guildId, currentConfig);
                 }
 
                 const panelChannel = interaction.options.getChannel('panel_channel');
