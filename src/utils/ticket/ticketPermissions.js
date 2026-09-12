@@ -14,8 +14,10 @@ export async function getTicketPermissionContext({ client, interaction }) {
   ]);
 
   const hasManageChannels = interaction.member.permissions.has(PermissionFlagsBits.ManageChannels);
-  const staffRoleId = config.ticketStaffRoleId || null;
-  const hasTicketStaffRole = Boolean(staffRoleId && interaction.member.roles?.cache?.has(staffRoleId));
+ // 1. Récupère la liste de tous vos rôles staff (ceux configurés dans le setup)
+const staffRoles = config.staffRoles || []; 
+// 2. Vérifie si le modérateur possède au moins un de ces rôles
+const hasTicketStaffRole = staffRoles.some(roleId => interaction.member.roles?.cache?.has(roleId));
   const isTicketCreator = Boolean(
     ticketData?.userId && String(ticketData.userId) === String(interaction.user.id),
   );
