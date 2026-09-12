@@ -180,7 +180,7 @@ export default {
                         }
 
                         // Charger le dashboard pour ce système
-                        return await ticketConfig.execute(interaction, guildConfig, client, selectedSystem);
+                        return await ticketConfig.execute(interaction, selectedSystem, client);
                     } catch (error) {
                         if (error.code !== 'InteractionCollectorError') {
                             throw error;
@@ -193,7 +193,7 @@ export default {
                     }
                 } else {
                     // Un seul système, charger directement
-                    return await ticketConfig.execute(interaction, guildConfig, client, ticketSystems[0]);
+                    return await ticketConfig.execute(interaction, ticketSystems[0], client);
                 }
             }
 
@@ -347,4 +347,3 @@ export default {
         }
     },
 };
-
