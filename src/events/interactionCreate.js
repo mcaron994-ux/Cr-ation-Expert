@@ -185,7 +185,7 @@ export default {
           }
 
           const focusedOption = interaction.options.getFocused(true);
-          
+
           if (interaction.commandName === 'apply' && focusedOption.name === 'application') {
             try {
               const { getApplicationRoles } = await import('../utils/database.js');
@@ -196,7 +196,7 @@ export default {
                 role.enabled !== false && 
                 role.name.toLowerCase().startsWith(roleName?.toLowerCase() || '')
               );
-              
+
               await interaction.respond(
                 filtered.slice(0, 25).map(role => ({
                   name: `${role.name}${role.enabled === false ? ' (disabled)' : ''}`,
@@ -220,7 +220,7 @@ export default {
               const filtered = roles.filter(role =>
                 role.name.toLowerCase().startsWith(appName?.toLowerCase() || '')
               );
-              
+
               await interaction.respond(
                 filtered.slice(0, 25).map(role => ({
                   name: `${role.name}${role.enabled === false ? ' (disabled)' : ''}`,
@@ -240,9 +240,9 @@ export default {
               const { getAllReactionRoleMessages, deleteReactionRoleMessage } = await import('../services/reactionRoleService.js');
               const guildId = interaction.guildId;
               const guild = interaction.guild;
-              
+
               let panels = await getAllReactionRoleMessages(client, guildId);
-              
+
               if (!panels || panels.length === 0) {
                 await interaction.respond([]);
                 return;
@@ -253,13 +253,13 @@ export default {
                 if (!panel.messageId || !panel.channelId) {
                   continue;
                 }
-                
+
                 const channel = guild.channels.cache.get(panel.channelId);
                 if (!channel) {
                   await deleteReactionRoleMessage(client, guildId, panel.messageId).catch(() => {});
                   continue;
                 }
-                
+
                 const msg = await channel.messages.fetch(panel.messageId).catch(() => null);
                 if (!msg) {
                   await deleteReactionRoleMessage(client, guildId, panel.messageId).catch(() => {});
@@ -267,24 +267,24 @@ export default {
                 }
                 validPanels.push(panel);
               }
-              
+
               if (validPanels.length === 0) {
                 await interaction.respond([]);
                 return;
               }
-              
+
               const choices = await Promise.all(
                 validPanels.slice(0, 25).map(async panel => {
                   try {
                     const channel = guild.channels.cache.get(panel.channelId);
                     if (!channel) return null;
-                    
+
                     const msg = await channel.messages.fetch(panel.messageId).catch(() => null);
                     if (!msg) return null;
-                    
+
                     const title = msg?.embeds?.[0]?.title ?? 'Untitled Panel';
                     const channelName = channel?.name ?? 'unknown';
-                    
+
                     return {
                       name: `${title} (${channelName})`.substring(0, 100),
                       value: panel.messageId
@@ -294,7 +294,7 @@ export default {
                   }
                 })
               );
-              
+
               const validChoices = choices.filter(c => c !== null);
               await interaction.respond(validChoices);
             } catch (error) {
@@ -307,8 +307,15 @@ export default {
             }
           }
         } else if (interaction.isButton()) {
-        if (interaction.customId.startsWith('shared_todo_')) {
-            const parts = interaction.customId.split('_');
+
+
+
+
+
+
+
+
+
           if (interaction.customId.startsWith('shared_todo_')) {
             const parts = interaction.customId.split('_');
             const buttonType = parts.slice(0, 3).join('_');
