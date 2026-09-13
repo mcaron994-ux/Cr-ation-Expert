@@ -1,4 +1,3 @@
-import breakButtons from '../interactions/breakButtons.js';
 import { Events, MessageFlags } from 'discord.js';
 import { logger } from '../utils/logger.js';
 import { getGuildConfig } from '../services/config/guildConfig.js';
@@ -309,12 +308,6 @@ export default {
           }
         } else if (interaction.isButton()) {
              } else if (interaction.isButton()) {
-        // --- AJOUTE CES 3 LIGNES ICI ---
-        if (interaction.customId === 'demarrer_pause' || interaction.customId.startsWith('fin_pause_')) {
-            return await breakButtons.handleButton(interaction);
-        }
-        // -------------------------------
-
         if (interaction.customId.startsWith('shared_todo_')) {
             const parts = interaction.customId.split('_');
           if (interaction.customId.startsWith('shared_todo_')) {
