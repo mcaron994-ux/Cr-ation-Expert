@@ -1,0 +1,14 @@
+{
+  "name": "discord-mod-break-bot",
+  "version": "1.0.0",
+  "description": "Système de gestion des pauses pour les modérateurs Discord",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.5"
+  }
+}
